@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Cyber Flappy Quiz Challenge - 3D Dice & Student Picker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      font-family: 'Rajdhani', sans-serif;
+      background: #020617;
+      color: #f8fafc;
+      overflow: hidden;
+    }
+    .font-orbitron {
+      font-family: 'Orbitron', sans-serif;
+    }
+    .neon-border {
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.35), inset 0 0 15px rgba(56, 189, 248, 0.15);
+      border: 2px solid #38bdf8;
+    }
+    .neon-text-cyan {
+      text-shadow: 0 0 10px #38bdf8, 0 0 20px #0284c7;
+    }
+    .neon-text-pink {
+      text-shadow: 0 0 10px #f43f5e, 0 0 20px #e11d48;
+    }
+    .neon-text-emerald {
+      text-shadow: 0 0 10px #10b981, 0 0 20px #059669;
+    }
+    .neon-text-amber {
+      text-shadow: 0 0 10px #f59e0b, 0 0 20px #d97706;
+    }
+    .btn-press {
+      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .btn-press:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.2);
+    }
+    .btn-press:active {
+      transform: translateY(1px) scale(0.97);
+    }
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.9);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+    .quiz-option-btn {
+      transition: all 0.2s ease;
+    }
+    .quiz-option-btn:hover {
+      border-color: #38bdf8;
+      background: rgba(14, 165, 233, 0.25);
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #38bdf8;
+      border-radius: 4px;
+    }
+
+    /* 3D Cyber Dice CSS Scene */
+    .dice-scene {
+      width: 100px;
+      height: 100px;
+      perspective: 600px;
+      margin: 0 auto;
+    }
+    .dice-cube {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 1.5s cubic-bezier(0.2, 0.8, 0.3, 1);
+    }
+    .dice-face {
+      position: absolute;
+      width: 100px;
+      height: 100px;
+      background: rgba(15, 23, 42, 0.95);
+      border: 2px solid #38bdf8;
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.5) inset;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 900;
+      font-size: 28px;
+      color: #38bdf8;
+      text-shadow: 0 0 10px #38bdf8;
+    }
+    .face-front  { transform: rotateY(0deg) translateZ(50px); }
+    .face-back   { transform: rotateY(180deg) translateZ(50px); }
+    .face-right  { transform: rotateY(90deg) translateZ(50px); }
+    .face-left   { transform: rotateY(-90deg) translateZ(50px); }
+    .face-top    { transform: rotateX(90deg) translateZ(50px); }
+    .face-bottom { transform: rotateX(-90deg) translateZ(50px); }
+
+    .dice-spinning {
+      animation: spinDice 0.2s linear infinite;
+    }
+    @keyframes spinDice {
+      0% { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
+      100% { transform: rotateX(360deg) rotateY(360deg) rotateZ(360deg); }
+    }
+  </style>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+
+  <div id="gameContainer" class="relative w-full max-w-md h-[100vh] max-h-[880px] sm:h-[92vh] sm:rounded-3xl overflow-hidden flex flex-col justify-center items-center bg-slate-950 neon-border">
+    
+    <!-- Canvas Overlay for Cyber Graphics -->
+    <canvas id="gameCanvas" class="w-full h-full block cursor-pointer"></canvas>
+
+    <!-- Start Screen Overlay -->
+    <div id="startScreen" class="absolute inset-0 flex flex-col justify-between p-6 glass-panel z-20 transition-all duration-300">
+      <div class="mt-4 text-center space-y-2">
+        <div class="inline-block px-3 py-1 bg-cyan-950/80 border border-cyan-500/50 rounded-full text-xs font-orbitron text-cyan-400 tracking-widest uppercase mb-1">
+          Cyberpunk Quiz Engine
+        </div>
+        <h1 class="text-4xl sm:text-5xl font-black font-orbitron tracking-wider neon-text-pink leading-tight">
+          CYBER<br><span class="neon-text-cyan text-cyan-400">FLAPPY QUIZ</span>
+        </h1>
+        <p id="questionCountSubtitle" class="text-xs text-slate-300 uppercase tracking-widest font-semibold mt-2">
+          Vượt cổng Cyber & Thử thách học sinh!
+        </p>
+      </div>
+
+      <!-- Instructions & Mode Banner -->
+      <div class="w-full bg-slate-900/80 border border-slate-700/60 rounded-2xl p-4 shadow-xl text-center space-y-3">
+        <span class="text-xs font-orbitron text-cyan-400 tracking-wider uppercase block">🚀 CHẾ ĐỘ BAY TỰ ĐỘNG & GỌI HỌC SINH</span>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Chú chim tự bay tới từng cổng Neon. Bấm <span class="text-amber-400 font-bold">GỌI TÊN</span> để quay Xúc Xắc 3D chọn ngẫu nhiên 1 học sinh trả lời!
+        </p>
+        <div class="flex items-center justify-around text-xs border-t border-slate-800 pt-3">
+          <span class="text-emerald-400 font-semibold">✓ Đúng: Boost lướt qua</span>
+          <span class="text-rose-400 font-semibold">✗ Sai: Rơi cắm đầu nổ tung</span>
+        </div>
+      </div>
+
+      <!-- High Score & Start Actions -->
+      <div class="w-full space-y-3">
+        <div class="flex justify-between items-center bg-slate-900/70 p-3.5 rounded-xl border border-slate-800">
+          <span class="text-xs font-orbitron text-slate-400">KỶ LỤC CAO NHẤT</span>
+          <span id="startHighScore" class="text-xl font-orbitron text-amber-400 font-bold">0</span>
+        </div>
+
+        <button id="startBtn" class="btn-press w-full py-4 bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 text-slate-950 font-black font-orbitron text-xl rounded-2xl shadow-lg shadow-cyan-500/30">
+          BẮT ĐẦU CHƠI
+        </button>
+
+        <div class="grid grid-cols-2 gap-2">
+          <button id="openDiceOnlyBtn" class="btn-press py-3 bg-slate-800 hover:bg-slate-700 border border-amber-500/40 text-amber-300 font-bold font-orbitron text-xs rounded-xl flex items-center justify-center space-x-1">
+            <span>🎲 XÚC XẮC 3D</span>
+          </button>
+          <button id="openEditorBtn" class="btn-press py-3 bg-slate-800 hover:bg-slate-700 border border-cyan-500/40 text-cyan-300 font-bold font-orbitron text-xs rounded-xl flex items-center justify-center space-x-1">
+            <span>⚙️ SỬA CÂU HỎI</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- HUD Overlay -->
+    <div id="hud" class="absolute top-0 left-0 w-full p-4 flex justify-between items-center pointer-events-none z-10 hidden">
+      <div class="bg-slate-950/80 backdrop-blur-md border border-cyan-500/40 rounded-2xl px-5 py-2 flex items-center space-x-3 shadow-lg">
+        <span class="text-xs font-orbitron text-slate-400">CỔNG</span>
+        <span id="liveScore" class="text-2xl font-orbitron font-black text-cyan-400 neon-text-cyan">0</span>
+      </div>
+
+      <div id="statusBadge" class="bg-cyan-950/80 border border-cyan-400/50 rounded-2xl px-4 py-2 text-xs font-orbitron text-cyan-300 tracking-wider animate-pulse">
+        ĐANG AUTO-FLY...
+      </div>
+    </div>
+
+    <!-- Quiz Modal Overlay -->
+    <div id="quizModal" class="absolute inset-0 glass-panel flex flex-col justify-between p-5 z-30 hidden transition-all duration-300">
+      <div class="flex justify-between items-center mt-1 border-b border-cyan-500/20 pb-2">
+        <span id="quizStageBadge" class="px-3 py-1 bg-cyan-950 border border-cyan-400 rounded-full text-xs font-orbitron text-cyan-400 uppercase tracking-widest">
+          CỔNG 1
+        </span>
+        <button id="quickCallBtn" class="btn-press px-3.5 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-black font-orbitron text-xs rounded-xl shadow-md flex items-center space-x-1">
+          <span>🎲 GỌI TÊN NHANH</span>
+        </button>
+      </div>
+
+      <!-- Current Selected Student Display Banner -->
+      <div id="selectedStudentBanner" class="bg-gradient-to-r from-amber-950/80 via-slate-900 to-amber-950/80 border border-amber-500/50 rounded-xl p-2.5 text-center shadow-lg">
+        <span class="text-[10px] font-orbitron text-amber-400/80 uppercase block tracking-wider">HỌC SINH ĐƯỢC CHỌN TRẢ LỜI</span>
+        <span id="targetStudentName" class="text-lg font-black font-orbitron text-amber-300 neon-text-amber block mt-0.5">Chưa chọn (Bấm nút Gọi Tên)</span>
+      </div>
+
+      <!-- Question Text Box -->
+      <div class="bg-slate-900/95 border border-cyan-500/40 rounded-2xl p-4 shadow-2xl text-center my-auto min-h-[100px] flex items-center justify-center">
+        <p id="questionText" class="text-base sm:text-lg font-semibold text-slate-100 leading-snug">
+          Đang tải câu hỏi...
+        </p>
+      </div>
+
+      <!-- Option Buttons (A, B, C, D) -->
+      <div id="optionsContainer" class="grid grid-cols-1 gap-2.5 w-full my-auto">
+        <button data-index="0" class="quiz-option-btn btn-press w-full p-3 bg-slate-900/90 border border-slate-700 rounded-xl text-left flex items-center space-x-3">
+          <span class="w-7 h-7 rounded-lg bg-cyan-950 border border-cyan-500/50 flex items-center justify-center font-orbitron text-cyan-400 font-bold text-xs shrink-0">A</span>
+          <span class="option-text text-sm font-semibold text-slate-200 leading-tight"></span>
+        </button>
+        <button data-index="1" class="quiz-option-btn btn-press w-full p-3 bg-slate-900/90 border border-slate-700 rounded-xl text-left flex items-center space-x-3">
+          <span class="w-7 h-7 rounded-lg bg-cyan-950 border border-cyan-500/50 flex items-center justify-center font-orbitron text-cyan-400 font-bold text-xs shrink-0">B</span>
+          <span class="option-text text-sm font-semibold text-slate-200 leading-tight"></span>
+        </button>
+        <button data-index="2" class="quiz-option-btn btn-press w-full p-3 bg-slate-900/90 border border-slate-700 rounded-xl text-left flex items-center space-x-3">
+          <span class="w-7 h-7 rounded-lg bg-cyan-950 border border-cyan-500/50 flex items-center justify-center font-orbitron text-cyan-400 font-bold text-xs shrink-0">C</span>
+          <span class="option-text text-sm font-semibold text-slate-200 leading-tight"></span>
+        </button>
+        <button data-index="3" class="quiz-option-btn btn-press w-full p-3 bg-slate-900/90 border border-slate-700 rounded-xl text-left flex items-center space-x-3">
+          <span class="w-7 h-7 rounded-lg bg-cyan-950 border border-cyan-500/50 flex items-center justify-center font-orbitron text-cyan-400 font-bold text-xs shrink-0">D</span>
+          <span class="option-text text-sm font-semibold text-slate-200 leading-tight"></span>
+        </button>
+      </div>
+
+      <div class="text-center text-[11px] text-slate-400 font-orbitron">
+        CHỌN ĐÁP ÁN ĐÚNG ĐỂ BOOST VƯỢT CỔNG
+      </div>
+    </div>
+
+    <!-- 3D Dice Roll Modal -->
+    <div id="diceModal" class="absolute inset-0 glass-panel flex flex-col justify-between p-6 z-50 hidden transition-all duration-300">
+      <div class="flex justify-between items-center border-b border-amber-500/30 pb-2">
+        <h3 class="text-base font-bold font-orbitron text-amber-400">🎲 VÒNG QUAY XÚC XẮC 3D</h3>
+        <button id="closeDiceBtn" class="text-slate-400 hover:text-white font-black text-xl px-2">✕</button>
+      </div>
+
+      <div class="my-auto text-center space-y-6">
+        <!-- 3D CSS Dice Container -->
+        <div class="dice-scene">
+          <div id="diceCube" class="dice-cube">
+            <div class="dice-face face-front">1</div>
+            <div class="dice-face face-back">6</div>
+            <div class="dice-face face-right">3</div>
+            <div class="dice-face face-left">4</div>
+            <div class="dice-face face-top">5</div>
+            <div class="dice-face face-bottom">2</div>
+          </div>
+        </div>
+
+        <div class="space-y-1">
+          <span class="text-xs font-orbitron text-slate-400 uppercase tracking-widest block">HỌC SINH MAY MẮN</span>
+          <div id="diceResultName" class="text-2xl sm:text-3xl font-black font-orbitron text-amber-300 neon-text-amber min-h-[40px] flex items-center justify-center">
+            Sẵn sàng quay...
+          </div>
+          <span id="diceResultNum" class="text-xs font-orbitron text-cyan-400 block font-semibold">STT: -- / 52</span>
+        </div>
+      </div>
+
+      <div class="space-y-2">
+        <button id="rollDiceBtn" class="btn-press w-full py-4 bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-500 text-slate-950 font-black font-orbitron text-lg rounded-2xl shadow-lg shadow-amber-500/30">
+          🎲 QUAY XÚC XẮC CHỌN HỌC SINH
+        </button>
+        <button id="confirmStudentBtn" class="btn-press w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold font-orbitron text-sm rounded-xl hidden">
+          ✓ XÁC NHẬN CHỌN HỌC SINH NÀY
+        </button>
+      </div>
+    </div>
+
+    <!-- Question Editor Modal -->
+    <div id="editorModal" class="absolute inset-0 glass-panel flex flex-col justify-between p-5 z-50 hidden transition-all duration-300">
+      <div class="flex justify-between items-center border-b border-cyan-500/30 pb-3">
+        <h3 class="text-base font-bold font-orbitron text-cyan-400">⚙️ TRÌNH CHỈNH SỬA CÂU HỎI</h3>
+        <button id="closeEditorBtn" class="text-slate-400 hover:text-white font-black text-xl px-2">✕</button>
+      </div>
+
+      <!-- Scrollable Questions List -->
+      <div id="editorList" class="flex-1 overflow-y-auto my-3 space-y-4 pr-1">
+        <!-- Generated Dynamically via JS -->
+      </div>
+
+      <!-- Editor Action Bar -->
+      <div class="space-y-2 border-t border-slate-800 pt-3">
+        <div class="grid grid-cols-2 gap-2">
+          <button id="addQuestionBtn" class="btn-press py-2.5 bg-cyan-950 border border-cyan-500/50 text-cyan-300 font-bold font-orbitron text-xs rounded-xl hover:bg-cyan-900">
+            + THÊM CÂU HỎI
+          </button>
+          <button id="resetQuestionsBtn" class="btn-press py-2.5 bg-rose-950 border border-rose-500/50 text-rose-300 font-bold font-orbitron text-xs rounded-xl hover:bg-rose-900">
+            ↺ RESET MẶC ĐỊNH
+          </button>
+        </div>
+        <button id="saveQuestionsBtn" class="btn-press w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-black font-orbitron text-sm rounded-xl shadow-lg">
+          LƯU & BẮT ĐẦU CHƠI
+        </button>
+      </div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="gameOverScreen" class="absolute inset-0 glass-panel flex flex-col items-center justify-center p-6 z-40 hidden">
+      <div class="bg-slate-900/95 border-2 border-rose-500/60 rounded-3xl p-6 w-full max-w-xs text-center shadow-2xl space-y-5">
+        <h2 class="text-3xl font-black font-orbitron text-rose-500 neon-text-pink tracking-wider">TRẢ LỜI SAI!</h2>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Chú chim va chạm nổ tung do chọn sai đáp án. Đã rơi cắm đầu xuống đất!
+        </p>
+        
+        <div class="bg-slate-950/80 rounded-2xl p-4 border border-slate-800 space-y-3">
+          <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+            <span class="text-xs font-orbitron text-slate-400">CỔNG VƯỢT QUA</span>
+            <span id="finalScore" class="text-2xl font-orbitron font-bold text-cyan-400">0</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-xs font-orbitron text-slate-400">KỶ LỤC CAO NHẤT</span>
+            <span id="finalHighScore" class="text-2xl font-orbitron font-bold text-amber-400">0</span>
+          </div>
+        </div>
+
+        <button id="restartBtn" class="btn-press w-full py-4 bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500 text-slate-950 font-black font-orbitron text-lg rounded-2xl shadow-lg shadow-rose-500/30">
+          THỬ LẠI
+        </button>
+      </div>
+    </div>
+
+    <!-- Victory Screen -->
+    <div id="victoryScreen" class="absolute inset-0 glass-panel flex flex-col items-center justify-center p-6 z-40 hidden">
+      <div class="bg-slate-900/95 border-2 border-emerald-500/60 rounded-3xl p-6 w-full max-w-xs text-center shadow-2xl space-y-5">
+        <div class="text-5xl animate-bounce">🏆</div>
+        <h2 class="text-3xl font-black font-orbitron text-emerald-400 neon-text-emerald tracking-wider">CHIẾN THẮNG!</h2>
+        <p class="text-xs text-emerald-200">Chúc mừng! Bạn và các học sinh đã xuất sắc vượt qua toàn bộ cổng Cyber!</p>
+        
+        <div class="bg-slate-950/80 rounded-2xl p-4 border border-emerald-500/30 space-y-2">
+          <span class="text-xs font-orbitron text-slate-400 block">HOÀN THÀNH XUẤT SẮC</span>
+          <span id="victoryScoreText" class="text-3xl font-orbitron font-black text-amber-400">0 CỔNG</span>
+        </div>
+
+        <button id="victoryRestartBtn" class="btn-press w-full py-4 bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 text-slate-950 font-black font-orbitron text-lg rounded-2xl shadow-lg shadow-emerald-500/30">
+          CHƠI LẠI
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    /* ===================================================================
+       1. MẢNG 52 HỌC SINH (SỬA TRỰC TIẾP TẠI ĐÂY)
+       =================================================================== */
+    const STUDENT_LIST = [
+      "1. Nguyễn Văn An", "2. Trần Thị Bích", "3. Lê Hoàng Cường", "4. Phạm Minh Dung",
+      "5. Hoàng Quốc Đạt", "6. Vũ Thị Giang", "7. Đặng Hà Hải", "8. Bùi Thu Hằng",
+      "9. Đỗ Văn Hùng", "10. Ngô Thị Khánh", "11. Lý Quốc Khoa", "12. Dương Bích Lâm",
+      "13. Mai Văn Long", "14. Trịnh Thị Mai", "15. Đinh Văn Nam", "16. Lâm Thị Nga",
+      "17. Phan Văn Nghĩa", "18. Hồ Thị Ngân", "19. Cao Hoàng Oanh", "20. Võ Văn Phúc",
+      "21. Tạ Thị Phương", "22. Lương Văn Quân", "23. Châu Thị Quyên", "24. Thái Văn Sơn",
+      "25. Tăng Thị Thảo", "26. Quách Văn Thịnh", "27. Hà Thị Thu", "28. Đoàn Văn Tiến",
+      "29. Nguyễn Thị Trang", "30. Trần Văn Tú", "31. Lê Thị Tuyết", "32. Phạm Văn Uy",
+      "33. Hoàng Thị Vân", "34. Vũ Văn Việt", "35. Đặng Thị Xoan", "36. Bùi Văn Xuân",
+      "37. Đỗ Thị Yến", "38. Ngô Văn Anh", "39. Lý Thị Bình", "40. Dương Văn Chiển",
+      "41. Mai Thị Diệp", "42. Trịnh Văn Hải", "43. Đinh Thị Hoa", "44. Lâm Văn Khải",
+      "45. Phan Thị Linh", "46. Hồ Văn Minh", "47. Cao Thị Như", "48. Võ Văn Ninh",
+      "49. Tạ Thị Phong", "50. Lương Văn Quang", "51. Châu Thị Tố", "52. Thái Văn Vinh"
+    ];
+
+    /* ===================================================================
+       2. CÂU HỎI MẶC ĐỊNH (ANSWER 0=A, 1=B, 2=C, 3=D)
+       =================================================================== */
+    const DEFAULT_QUESTIONS = [
+      {
+        question: "1. Trong lập trình Web, HTML được dùng để làm gì?",
+        options: [
+          "Tạo cấu trúc nội dung trang web",
+          "Trang trí màu sắc và hiệu ứng",
+          "Xử lý logic cơ sở dữ liệu",
+          "Tăng tốc độ đường truyền mạng"
+        ],
+        answer: 0
+      },
+      {
+        question: "2. CSS viết tắt của từ nào sau đây?",
+        options: [
+          "Creative Style Sheets",
+          "Cascading Style Sheets",
+          "Computer Style System",
+          "Colorful Style Spread"
+        ],
+        answer: 1
+      },
+      {
+        question: "3. Thẻ HTML nào dùng để chèn hình ảnh vào trang web?",
+        options: [
+          "<picture>",
+          "<src>",
+          "<img>",
+          "<image>"
+        ],
+        answer: 2
+      },
+      {
+        question: "4. Ngôn ngữ nào chạy trên trình duyệt để tạo tương tác?",
+        options: [
+          "Python",
+          "Java",
+          "C++",
+          "JavaScript"
+        ],
+        answer: 3
+      },
+      {
+        question: "5. Thuộc tính nào xác định đường dẫn liên kết cho thẻ <a>?",
+        options: [
+          "href",
+          "src",
+          "link",
+          "path"
+        ],
+        answer: 0
+      }
+    ];
+
+    let currentQuestions = JSON.parse(localStorage.getItem('cyber_quiz_questions')) || DEFAULT_QUESTIONS;
+
+    function saveQuestionsToStorage() {
+      localStorage.setItem('cyber_quiz_questions', JSON.stringify(currentQuestions));
+    }
+
+    /* ===================================================================
+       3. WEB AUDIO SYNTHESIZER ENGINE
+       =================================================================== */
+    class CyberSoundEngine {
+      constructor() {
+        this.ctx = null;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playBoost() {
+        this.init();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(250, now);
+        osc.frequency.exponentialRampToValueAtTime(1400, now + 0.35);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(now + 0.35);
+      }
+
+      playCorrect() {
+        this.init();
+        const now = this.ctx.currentTime;
+        const notes = [523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+          gain.gain.setValueAtTime(0.2, now + idx * 0.08);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.08 + 0.25);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + idx * 0.08);
+          osc.stop(now + idx * 0.08 + 0.25);
+        });
+      }
+
+      playScream() {
+        this.init();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(900, now);
+        osc.frequency.exponentialRampToValueAtTime(120, now + 0.6);
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(now + 0.6);
+      }
+
+      playCrash() {
+        this.init();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(160, now);
+        osc.frequency.exponentialRampToValueAtTime(20, now + 0.5);
+        gain.gain.setValueAtTime(0.6, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(now + 0.5);
+      }
+
+      playDiceRoll() {
+        this.init();
+        const now = this.ctx.currentTime;
+        for (let i = 0; i < 8; i++) {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(400 + Math.random() * 300, now + i * 0.08);
+          gain.gain.setValueAtTime(0.15, now + i * 0.08);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.08 + 0.05);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + i * 0.08);
+          osc.stop(now + i * 0.08 + 0.05);
+        }
+      }
+
+      playVictory() {
+        this.init();
+        const notes = [523.25, 659.25, 783.99, 987.77, 1046.50];
+        notes.forEach((freq, idx) => {
+          const now = this.ctx.currentTime + idx * 0.12;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now);
+          gain.gain.setValueAtTime(0.25, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.35);
+        });
+      }
+    }
+
+    const audio = new CyberSoundEngine();
+
+    /* ===================================================================
+       4. GAME ENGINE & DOM BINDINGS
+       =================================================================== */
+    const container = document.getElementById('gameContainer');
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // UI Overlays & Buttons
+    const startScreen = document.getElementById('startScreen');
+    const hud = document.getElementById('hud');
+    const quizModal = document.getElementById('quizModal');
+    const diceModal = document.getElementById('diceModal');
+    const editorModal = document.getElementById('editorModal');
+    const gameOverScreen = document.getElementById('gameOverScreen');
+    const victoryScreen = document.getElementById('victoryScreen');
+
+    const startBtn = document.getElementById('startBtn');
+    const openEditorBtn = document.getElementById('openEditorBtn');
+    const openDiceOnlyBtn = document.getElementById('openDiceOnlyBtn');
+    const closeEditorBtn = document.getElementById('closeEditorBtn');
+    const closeDiceBtn = document.getElementById('closeDiceBtn');
+    const quickCallBtn = document.getElementById('quickCallBtn');
+    const rollDiceBtn = document.getElementById('rollDiceBtn');
+    const confirmStudentBtn = document.getElementById('confirmStudentBtn');
+
+    const addQuestionBtn = document.getElementById('addQuestionBtn');
+    const resetQuestionsBtn = document.getElementById('resetQuestionsBtn');
+    const saveQuestionsBtn = document.getElementById('saveQuestionsBtn');
+    const editorList = document.getElementById('editorList');
+
+    const restartBtn = document.getElementById('restartBtn');
+    const victoryRestartBtn = document.getElementById('victoryRestartBtn');
+    const liveScoreEl = document.getElementById('liveScore');
+    const startHighScoreEl = document.getElementById('startHighScore');
+    const finalScoreEl = document.getElementById('finalScore');
+    const finalHighScoreEl = document.getElementById('finalHighScore');
+    const victoryScoreTextEl = document.getElementById('victoryScoreText');
+    const questionTextEl = document.getElementById('questionText');
+    const quizStageBadgeEl = document.getElementById('quizStageBadge');
+    const optionButtons = document.querySelectorAll('.quiz-option-btn');
+    const statusBadgeEl = document.getElementById('statusBadge');
+    const questionCountSubtitle = document.getElementById('questionCountSubtitle');
+    const targetStudentNameEl = document.getElementById('targetStudentName');
+    const diceCubeEl = document.getElementById('diceCube');
+    const diceResultNameEl = document.getElementById('diceResultName');
+    const diceResultNumEl = document.getElementById('diceResultNum');
+
+    function resizeCanvas() {
+      canvas.width = container.clientWidth;
+      canvas.height = container.clientHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // Game Variables
+    let gameState = 'START'; // START, AUTO_FLYING, QUIZ_WAITING, TURBO_BOOST, FALLING, GAMEOVER, VICTORY
+    let currentStage = 0;
+    let highScore = parseInt(localStorage.getItem('cyber_flappy_quiz_highscore')) || 0;
+    let selectedStudent = null;
+
+    function updateHighScoreDisplay() {
+      startHighScoreEl.textContent = `${highScore} / ${currentQuestions.length}`;
+      questionCountSubtitle.textContent = `Trả lời ${currentQuestions.length} câu hỏi để vượt qua các cổng Cyber!`;
+    }
+    updateHighScoreDisplay();
+
+    let frames = 0;
+    let screenShakeTime = 0;
+    let bgScroll = 0;
+
+    // Collections & Weather Effects
+    let particles = [];
+    let plasmaRain = [];
+    let popups = [];
+    let currentPipe = null;
+
+    // Initialize Plasma Rain Effects
+    for (let i = 0; i < 35; i++) {
+      plasmaRain.push({
+        x: Math.random() * 400,
+        y: Math.random() * 800,
+        speed: Math.random() * 8 + 4,
+        length: Math.random() * 20 + 10,
+        color: Math.random() > 0.5 ? '#38bdf8' : '#f43f5e'
+      });
+    }
+
+    /* ===================================================================
+       5. BIRD OBJECT & ACCELERATED FALL PHYSICS
+       =================================================================== */
+    const bird = {
+      x: 80,
+      y: canvas.height / 2,
+      targetY: canvas.height / 2,
+      vy: 0,
+      gravity: 0.65,
+      rotation: 0,
+      width: 38,
+      height: 30,
+      shieldActive: false,
+
+      reset() {
+        this.x = 80;
+        this.y = canvas.height / 2;
+        this.targetY = canvas.height / 2;
+        this.vy = 0;
+        this.rotation = 0;
+        this.shieldActive = false;
+      },
+
+      triggerFall() {
+        this.vy = -4; // Upward pop before crashing
+        this.gravity = 0.85;
+        audio.playScream();
+      },
+
+      update() {
+        const groundY = canvas.height - 90;
+
+        if (gameState === 'AUTO_FLYING' || gameState === 'QUIZ_WAITING') {
+          this.targetY = (canvas.height / 2) + Math.sin(frames * 0.08) * 22;
+          this.y += (this.targetY - this.y) * 0.1;
+          this.rotation = 0;
+        } else if (gameState === 'TURBO_BOOST') {
+          this.y += (this.targetY - this.y) * 0.12;
+          this.rotation = 0;
+        } else if (gameState === 'FALLING') {
+          // Accelerating Crash Gravity
+          this.vy += this.gravity;
+          this.y += this.vy;
+
+          if (this.rotation < Math.PI / 2 + 0.2) {
+            this.rotation += 0.12;
+          }
+
+          // Dense Smoke/Fire Particles
+          if (frames % 2 === 0) {
+            particles.push({
+              x: this.x,
+              y: this.y,
+              vx: (Math.random() - 0.5) * 4,
+              vy: (Math.random() - 0.5) * 4,
+              size: Math.random() * 6 + 3,
+              life: 1,
+              color: Math.random() > 0.4 ? '#f43f5e' : '#f59e0b'
+            });
+          }
+
+          // Ground Impact Check
+          if (this.y >= groundY - 15) {
+            this.y = groundY - 15;
+            triggerCrashImpact();
+          }
+        }
+
+        // Rocket Jet Exhaust Particles
+        if (frames % 2 === 0 && (gameState === 'AUTO_FLYING' || gameState === 'TURBO_BOOST')) {
+          particles.push({
+            x: this.x - 16,
+            y: this.y + (Math.random() * 6 - 3),
+            vx: -Math.random() * 4 - 3,
+            vy: (Math.random() - 0.5) * 1.5,
+            size: Math.random() * 4 + 2,
+            life: 1,
+            color: this.shieldActive ? '#10b981' : '#38bdf8'
+          });
+        }
+      },
+
+      draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rotation);
+
+        // Shield / Boost Aura
+        if (this.shieldActive) {
+          ctx.shadowColor = '#10b981';
+          ctx.shadowBlur = 22;
+          ctx.strokeStyle = '#34d399';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(0, 0, 26, 0, Math.PI * 2);
+          ctx.stroke();
+        } else {
+          ctx.shadowColor = gameState === 'FALLING' ? '#f43f5e' : '#38bdf8';
+          ctx.shadowBlur = 14;
+        }
+
+        // Body Oval
+        ctx.fillStyle = gameState === 'FALLING' ? '#f43f5e' : (this.shieldActive ? '#10b981' : '#0284c7');
+        ctx.beginPath();
+        ctx.ellipse(0, 0, this.width / 2, this.height / 2, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Visor/Eye
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(9, -4, 7, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = gameState === 'FALLING' ? '#f43f5e' : '#f59e0b';
+        ctx.shadowColor = ctx.fillStyle;
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.arc(10, -4, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Beak
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath();
+        ctx.moveTo(15, -2);
+        ctx.lineTo(24, 2);
+        ctx.lineTo(15, 6);
+        ctx.closePath();
+        ctx.fill();
+
+        // Animated Wing
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath();
+        const wingOffset = gameState === 'FALLING' ? 0.9 : Math.sin(frames * 0.25) * 0.35;
+        ctx.ellipse(-9, 2, 10, 5, wingOffset, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+      }
+    };
+
+    /* ===================================================================
+       6. PIPE GATES & WORLD SCENERY DRAWING
+       =================================================================== */
+    const pipeWidth = 70;
+    const pipeGap = 160;
+
+    function createGateForStage(stageIndex) {
+      const groundHeight = 90;
+      const availableHeight = canvas.height - groundHeight;
+      const topHeight = (availableHeight - pipeGap) / 2;
+
+      currentPipe = {
+        x: canvas.width + 60,
+        top: topHeight,
+        bottom: availableHeight - topHeight - pipeGap,
+        targetGapY: topHeight + pipeGap / 2,
+        stage: stageIndex,
+        quizTriggered: false,
+        passed: false
+      };
+    }
+
+    function drawPipe() {
+      if (!currentPipe) return;
+
+      const pipe = currentPipe;
+      const groundY = canvas.height - 90;
+
+      const pipeGrad = ctx.createLinearGradient(pipe.x, 0, pipe.x + pipeWidth, 0);
+      pipeGrad.addColorStop(0, '#0284c7');
+      pipeGrad.addColorStop(0.5, '#38bdf8');
+      pipeGrad.addColorStop(1, '#0369a1');
+
+      ctx.fillStyle = pipeGrad;
+      ctx.shadowColor = '#38bdf8';
+      ctx.shadowBlur = 12;
+
+      // Top Pipe
+      ctx.fillRect(pipe.x, 0, pipeWidth, pipe.top);
+      ctx.fillRect(pipe.x - 4, pipe.top - 22, pipeWidth + 8, 22);
+
+      // Bottom Pipe
+      const bottomY = groundY - pipe.bottom;
+      ctx.fillRect(pipe.x, bottomY, pipeWidth, pipe.bottom);
+      ctx.fillRect(pipe.x - 4, bottomY, pipeWidth + 8, 22);
+
+      // Cyber Laser Gate Field
+      if (gameState === 'QUIZ_WAITING' || gameState === 'FALLING') {
+        ctx.fillStyle = 'rgba(244, 63, 94, 0.3)';
+        ctx.fillRect(pipe.x + 4, pipe.top, pipeWidth - 8, pipeGap);
+
+        ctx.strokeStyle = '#f43f5e';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(pipe.x + pipeWidth / 2, pipe.top);
+        ctx.lineTo(pipe.x + pipeWidth / 2, bottomY);
+        ctx.stroke();
+      } else if (bird.shieldActive) {
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.25)';
+        ctx.fillRect(pipe.x + 4, pipe.top, pipeWidth - 8, pipeGap);
+      }
+
+      ctx.shadowBlur = 0;
+    }
+
+    function drawBackground() {
+      const width = canvas.width;
+      const height = canvas.height;
+
+      if (gameState === 'AUTO_FLYING' || gameState === 'TURBO_BOOST') {
+        bgScroll += (gameState === 'TURBO_BOOST' ? 6 : 2);
+      }
+
+      // Sky Gradient
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, height);
+      skyGrad.addColorStop(0, '#020617');
+      skyGrad.addColorStop(0.6, '#0f172a');
+      skyGrad.addColorStop(1, '#1e1b4b');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, width, height);
+
+      // Render Cyber Rain
+      ctx.lineWidth = 1.5;
+      plasmaRain.forEach(drop => {
+        if (gameState === 'AUTO_FLYING' || gameState === 'TURBO_BOOST') {
+          drop.y += drop.speed;
+          if (drop.y > height - 90) {
+            drop.y = -20;
+            drop.x = Math.random() * width;
+          }
+        }
+        ctx.strokeStyle = drop.color;
+        ctx.beginPath();
+        ctx.moveTo(drop.x, drop.y);
+        ctx.lineTo(drop.x - 2, drop.y + drop.length);
+        ctx.stroke();
+      });
+
+      // City Skyline Parallax
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
+      const cityStep = 45;
+      for (let x = - (bgScroll * 0.3 % cityStep); x < width + cityStep; x += cityStep) {
+        const h = 85 + Math.sin(x * 0.04) * 45;
+        ctx.fillRect(x, height - 90 - h, 40, h);
+      }
+
+      // Ground Grid & Cyber Edge
+      const groundHeight = 90;
+      const groundY = height - groundHeight;
+
+      const groundGrad = ctx.createLinearGradient(0, groundY, 0, height);
+      groundGrad.addColorStop(0, '#0284c7');
+      groundGrad.addColorStop(1, '#020617');
+      ctx.fillStyle = groundGrad;
+      ctx.fillRect(0, groundY, width, groundHeight);
+
+      ctx.strokeStyle = '#38bdf8';
+      ctx.shadowColor = '#38bdf8';
+      ctx.shadowBlur = 12;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(0, groundY);
+      ctx.lineTo(width, groundY);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      // Perspective Grid Lines
+      const gridSpacing = 32;
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
+      ctx.lineWidth = 1;
+      for (let x = - (bgScroll % gridSpacing); x < width + gridSpacing; x += gridSpacing) {
+        ctx.beginPath();
+        ctx.moveTo(x, groundY);
+        ctx.lineTo(x - 22, height);
+        ctx.stroke();
+      }
+    }
+
+    function createExplosion(x, y) {
+      for (let i = 0; i < 50; i++) {
+        particles.push({
+          x: x,
+          y: y,
+          vx: (Math.random() - 0.5) * 12,
+          vy: (Math.random() - 0.5) * 12,
+          size: Math.random() * 7 + 3,
+          life: 1,
+          color: Math.random() > 0.3 ? '#f43f5e' : '#f59e0b'
+        });
+      }
+    }
+
+    function updateParticles() {
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= 0.03;
+        if (p.life <= 0) particles.splice(i, 1);
+      }
+    }
+
+    function drawParticles() {
+      particles.forEach(p => {
+        ctx.save();
+        ctx.globalAlpha = p.life;
+        ctx.fillStyle = p.color;
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+    }
+
+    function addScorePopup(x, y, text) {
+      popups.push({ x: x, y: y, text: text, life: 1, vy: -1.8 });
+    }
+
+    function updateAndDrawPopups() {
+      for (let i = popups.length - 1; i >= 0; i--) {
+        const p = popups[i];
+        p.y += p.vy;
+        p.life -= 0.02;
+
+        if (p.life <= 0) {
+          popups.splice(i, 1);
+          continue;
+        }
+
+        ctx.save();
+        ctx.globalAlpha = p.life;
+        ctx.font = '900 22px Orbitron';
+        ctx.fillStyle = '#10b981';
+        ctx.shadowColor = '#10b981';
+        ctx.shadowBlur = 10;
+        ctx.fillText(p.text, p.x, p.y);
+        ctx.restore();
+      }
+    }
+
+    /* ===================================================================
+       7. 3D DICE ROLL & STUDENT PICKER LOGIC
+       =================================================================== */
+    let isDiceSpinning = false;
+    let pendingStudentResult = null;
+
+    function openDiceModal() {
+      diceResultNameEl.textContent = "Sẵn sàng quay...";
+      diceResultNumEl.textContent = `STT: -- / ${STUDENT_LIST.length}`;
+      confirmStudentBtn.classList.add('hidden');
+      diceModal.classList.remove('hidden');
+    }
+
+    function rollDice3D() {
+      if (isDiceSpinning) return;
+      audio.init();
+      audio.playDiceRoll();
+
+      isDiceSpinning = true;
+      diceCubeEl.classList.add('dice-spinning');
+      diceResultNameEl.textContent = "Đang quay...";
+      confirmStudentBtn.classList.add('hidden');
+
+      setTimeout(() => {
+        diceCubeEl.classList.remove('dice-spinning');
+        isDiceSpinning = false;
+
+        // Pick random student index (0 to STUDENT_LIST.length - 1)
+        const randomIndex = Math.floor(Math.random() * STUDENT_LIST.length);
+        pendingStudentResult = STUDENT_LIST[randomIndex];
+
+        // Random face rotation angles for 3D effect
+        const rotX = Math.floor(Math.random() * 4) * 90 + 720;
+        const rotY = Math.floor(Math.random() * 4) * 90 + 720;
+        diceCubeEl.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+
+        diceResultNameEl.textContent = pendingStudentResult;
+        diceResultNumEl.textContent = `STT: ${randomIndex + 1} / ${STUDENT_LIST.length}`;
+
+        if (gameState === 'QUIZ_WAITING') {
+          confirmStudentBtn.classList.remove('hidden');
+        }
+      }, 1200);
+    }
+
+    rollDiceBtn.addEventListener('click', rollDice3D);
+
+    quickCallBtn.addEventListener('click', () => {
+      openDiceModal();
+    });
+
+    confirmStudentBtn.addEventListener('click', () => {
+      if (pendingStudentResult) {
+        selectedStudent = pendingStudentResult;
+        targetStudentNameEl.textContent = selectedStudent;
+      }
+      diceModal.classList.add('hidden');
+    });
+
+    openDiceOnlyBtn.addEventListener('click', () => {
+      openDiceModal();
+    });
+
+    closeDiceBtn.addEventListener('click', () => {
+      diceModal.classList.add('hidden');
+    });
+
+    /* ===================================================================
+       8. QUIZ CONTROLLER & ANSWER HANDLERS
+       =================================================================== */
+    function showQuizModal() {
+      if (currentStage >= currentQuestions.length) return;
+
+      gameState = 'QUIZ_WAITING';
+      statusBadgeEl.textContent = "ĐANG CHỜ TRẢ LỜI...";
+      statusBadgeEl.className = "bg-amber-950/80 border border-amber-400/50 rounded-2xl px-4 py-2 text-xs font-orbitron text-amber-300 tracking-wider animate-pulse";
+
+      const qData = currentQuestions[currentStage];
+      quizStageBadgeEl.textContent = `CỔNG ${currentStage + 1} / ${currentQuestions.length}`;
+      questionTextEl.textContent = qData.question;
+
+      targetStudentNameEl.textContent = selectedStudent ? selectedStudent : "Chưa chọn (Bấm nút Gọi Tên)";
+
+      optionButtons.forEach((btn, idx) => {
+        const textSpan = btn.querySelector('.option-text');
+        textSpan.textContent = qData.options[idx] || '';
+        btn.onclick = () => handleAnswerSelect(idx);
+      });
+
+      quizModal.classList.remove('hidden');
+    }
+
+    function handleAnswerSelect(selectedIdx) {
+      const qData = currentQuestions[currentStage];
+
+      audio.init();
+      quizModal.classList.add('hidden');
+
+      if (selectedIdx === qData.answer) {
+        // CORRECT ANSWER -> BOOST SAFELY THROUGH GATE
+        audio.playCorrect();
+        audio.playBoost();
+
+        bird.shieldActive = true;
+        gameState = 'TURBO_BOOST';
+
+        statusBadgeEl.textContent = "ĐÚNG RỒI! TURBO BOOST!";
+        statusBadgeEl.className = "bg-emerald-950/80 border border-emerald-400/50 rounded-2xl px-4 py-2 text-xs font-orbitron text-emerald-300 tracking-wider animate-bounce";
+
+        addScorePopup(bird.x + 10, bird.y - 20, "ĐÚNG! +1 CỔNG");
+
+      } else {
+        // WRONG ANSWER -> SCREAM, DROP HEAD-FIRST & CRASH!
+        gameState = 'FALLING';
+        bird.triggerFall();
+
+        statusBadgeEl.textContent = "TRẢ LỜI SAI! BỊ RƠI!";
+        statusBadgeEl.className = "bg-rose-950/80 border border-rose-400/50 rounded-2xl px-4 py-2 text-xs font-orbitron text-rose-300 tracking-wider animate-pulse";
+      }
+    }
+
+    function triggerCrashImpact() {
+      audio.playCrash();
+      createExplosion(bird.x, bird.y);
+      screenShakeTime = 28;
+      gameState = 'GAMEOVER';
+
+      if (currentStage > highScore) {
+        highScore = currentStage;
+        localStorage.setItem('cyber_flappy_quiz_highscore', highScore);
+      }
+
+      finalScoreEl.textContent = `${currentStage} / ${currentQuestions.length}`;
+      finalHighScoreEl.textContent = `${highScore} / ${currentQuestions.length}`;
+
+      hud.classList.add('hidden');
+      gameOverScreen.classList.remove('hidden');
+    }
+
+    function triggerVictory() {
+      audio.playVictory();
+      gameState = 'VICTORY';
+      highScore = currentQuestions.length;
+      localStorage.setItem('cyber_flappy_quiz_highscore', highScore);
+
+      victoryScoreTextEl.textContent = `${currentQuestions.length} / ${currentQuestions.length} CỔNG`;
+
+      hud.classList.add('hidden');
+      victoryScreen.classList.remove('hidden');
+    }
+
+    function resetGame() {
+      currentStage = 0;
+      frames = 0;
+      particles = [];
+      popups = [];
+      selectedStudent = null;
+      liveScoreEl.textContent = `0 / ${currentQuestions.length}`;
+      bird.reset();
+      createGateForStage(currentStage);
+      updateHighScoreDisplay();
+    }
+
+    function startGame() {
+      if (currentQuestions.length === 0) {
+        alert("Vui lòng thêm ít nhất 1 câu hỏi trong phần Chỉnh Sửa Câu Hỏi!");
+        return;
+      }
+
+      resetGame();
+      gameState = 'AUTO_FLYING';
+
+      statusBadgeEl.textContent = "ĐANG AUTO-FLY...";
+      statusBadgeEl.className = "bg-cyan-950/80 border border-cyan-400/50 rounded-2xl px-4 py-2 text-xs font-orbitron text-cyan-300 tracking-wider animate-pulse";
+
+      startScreen.classList.add('hidden');
+      gameOverScreen.classList.add('hidden');
+      victoryScreen.classList.add('hidden');
+      quizModal.classList.add('hidden');
+      editorModal.classList.add('hidden');
+      diceModal.classList.add('hidden');
+      hud.classList.remove('hidden');
+    }
+
+    /* ===================================================================
+       9. QUESTION CUSTOMIZER EDITOR UI
+       =================================================================== */
+    function renderEditorList() {
+      editorList.innerHTML = '';
+
+      currentQuestions.forEach((q, qIdx) => {
+        const card = document.createElement('div');
+        card.className = "bg-slate-900/90 border border-slate-700/80 rounded-2xl p-4 space-y-3 shadow-md";
+
+        card.innerHTML = `
+          <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+            <span class="text-xs font-orbitron font-bold text-cyan-400">CÂU HỎI ${qIdx + 1}</span>
+            <button onclick="deleteQuestion(${qIdx})" class="text-xs font-orbitron text-rose-400 hover:text-rose-300 font-bold px-2 py-1 bg-rose-950/60 border border-rose-500/40 rounded-lg">
+              🗑️ XÓA
+            </button>
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-orbitron text-slate-400 mb-1">NỘI DUNG CÂU HỎI</label>
+            <input type="text" value="${q.question.replace(/"/g, '&quot;')}" onchange="updateQuestionText(${qIdx}, this.value)"
+              class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-white focus:border-cyan-400 focus:outline-none" placeholder="Nhập câu hỏi...">
+          </div>
+
+          <div class="grid grid-cols-1 gap-2">
+            ${['A', 'B', 'C', 'D'].map((optLabel, optIdx) => `
+              <div class="flex items-center space-x-2">
+                <span class="text-xs font-orbitron font-bold text-cyan-400 w-4">${optLabel}:</span>
+                <input type="text" value="${(q.options[optIdx] || '').replace(/"/g, '&quot;')}" onchange="updateOptionText(${qIdx}, ${optIdx}, this.value)"
+                  class="flex-1 bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-xs text-slate-200 focus:border-cyan-400 focus:outline-none" placeholder="Đáp án ${optLabel}">
+                <input type="radio" name="correct_${qIdx}" ${q.answer === optIdx ? 'checked' : ''} onchange="updateCorrectAnswer(${qIdx}, ${optIdx})"
+                  class="accent-emerald-400 cursor-pointer" title="Chọn làm đáp án đúng">
+              </div>
+            `).join('')}
+          </div>
+        `;
+
+        editorList.appendChild(card);
+      });
+    }
+
+    window.updateQuestionText = function(index, value) {
+      currentQuestions[index].question = value;
+    };
+
+    window.updateOptionText = function(qIndex, optIndex, value) {
+      currentQuestions[qIndex].options[optIndex] = value;
+    };
+
+    window.updateCorrectAnswer = function(qIndex, optIndex) {
+      currentQuestions[qIndex].answer = optIndex;
+    };
+
+    window.deleteQuestion = function(index) {
+      currentQuestions.splice(index, 1);
+      renderEditorList();
+    };
+
+    addQuestionBtn.addEventListener('click', () => {
+      currentQuestions.push({
+        question: `${currentQuestions.length + 1}. Câu hỏi mới?`,
+        options: ["Lựa chọn A", "Lựa chọn B", "Lựa chọn C", "Lựa chọn D"],
+        answer: 0
+      });
+      renderEditorList();
+      editorList.scrollTop = editorList.scrollHeight;
+    });
+
+    resetQuestionsBtn.addEventListener('click', () => {
+      if (confirm("Khôi phục danh sách câu hỏi về mặc định?")) {
+        currentQuestions = JSON.parse(JSON.stringify(DEFAULT_QUESTIONS));
+        saveQuestionsToStorage();
+        renderEditorList();
+        updateHighScoreDisplay();
+      }
+    });
+
+    saveQuestionsBtn.addEventListener('click', () => {
+      saveQuestionsToStorage();
+      updateHighScoreDisplay();
+      editorModal.classList.add('hidden');
+      startGame();
+    });
+
+    openEditorBtn.addEventListener('click', () => {
+      renderEditorList();
+      editorModal.classList.remove('hidden');
+    });
+
+    closeEditorBtn.addEventListener('click', () => {
+      editorModal.classList.add('hidden');
+    });
+
+    /* ===================================================================
+       10. MAIN ANIMATION RENDER LOOP
+       =================================================================== */
+    function gameLoop() {
+      ctx.save();
+
+      // Screen Shake Processing
+      if (screenShakeTime > 0) {
+        ctx.translate((Math.random() - 0.5) * 14, (Math.random() - 0.5) * 14);
+        screenShakeTime--;
+      }
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      drawBackground();
+
+      if (gameState === 'AUTO_FLYING') {
+        frames++;
+        bird.update();
+
+        if (currentPipe) {
+          currentPipe.x -= 2.2;
+
+          if (!currentPipe.quizTriggered && currentPipe.x - bird.x < 140) {
+            currentPipe.quizTriggered = true;
+            bird.targetY = currentPipe.targetGapY;
+            showQuizModal();
+          }
+        }
+      } else if (gameState === 'TURBO_BOOST') {
+        frames++;
+        bird.update();
+
+        if (currentPipe) {
+          currentPipe.x -= 5.8;
+
+          if (!currentPipe.passed && currentPipe.x + pipeWidth < bird.x) {
+            currentPipe.passed = true;
+            currentStage++;
+            liveScoreEl.textContent = `${currentStage} / ${currentQuestions.length}`;
+
+            if (currentStage >= currentQuestions.length) {
+              triggerVictory();
+            } else {
+              bird.shieldActive = false;
+              gameState = 'AUTO_FLYING';
+              statusBadgeEl.textContent = "ĐANG AUTO-FLY...";
+              statusBadgeEl.className = "bg-cyan-950/80 border border-cyan-400/50 rounded-2xl px-4 py-2 text-xs font-orbitron text-cyan-300 tracking-wider animate-pulse";
+              createGateForStage(currentStage);
+            }
+          }
+        }
+      } else if (gameState === 'FALLING') {
+        frames++;
+        bird.update();
+      }
+
+      drawPipe();
+      drawParticles();
+      if (gameState !== 'GAMEOVER') bird.draw();
+      updateAndDrawPopups();
+      updateParticles();
+
+      ctx.restore();
+      requestAnimationFrame(gameLoop);
+    }
+
+    // Action Event Listeners
+    startBtn.addEventListener('click', () => { audio.init(); startGame(); });
+    restartBtn.addEventListener('click', () => { audio.init(); startGame(); });
+    victoryRestartBtn.addEventListener('click', () => { audio.init(); startGame(); });
+
+    // Window Load Entry Point
+    window.onload = function() {
+      bird.reset();
+      createGateForStage(0);
+      gameLoop();
+    };
+  </script>
+</body>
+</html>
